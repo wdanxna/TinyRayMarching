@@ -30,3 +30,7 @@
 *.exe
 *.out
 *.app
+main
+out.ppm
+main.dSYM/Contents/Info.plist
+main.dSYM/Contents/Resources/Relocations/aarch64/main.yml
