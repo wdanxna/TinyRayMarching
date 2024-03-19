@@ -6,6 +6,9 @@
 #include <vector>
 #include "geometry.h"
 
+Vec3f CENTER = Vec3f{0, 0, 0};
+float RADIUS = 1.5f;
+
 void write_ppm(const char* filename, const std::vector<Vec3f>& data, int width, int height) {
     std::ofstream ofs(filename, std::ios::binary);
     ofs << "P6\n" << width << " " << height << "\n255\n";
@@ -17,15 +20,25 @@ void write_ppm(const char* filename, const std::vector<Vec3f>& data, int width, 
 }
 
 float signed_distance_sphere(const Vec3f& p, const Vec3f& center, float radius) {
-    return powf(p.x - center.x, 2.0f) + powf(p.y - center.y, 2.0f) + powf(p.z - center.z, 2.0f) - radius*radius;
+    return (p-center).norm() - radius;
+}
+
+Vec3f distance_field_normal(const Vec3f& p) {
+    //finite differences, the direction of change of f(x,y,z) at point p
+    const float eps = 0.1f;
+    float d = signed_distance_sphere(p, CENTER, RADIUS);
+    float dx = signed_distance_sphere(p+Vec3f{eps, 0, 0}, CENTER, RADIUS) - d;
+    float dy = signed_distance_sphere(p+Vec3f{0, eps, 0}, CENTER, RADIUS) - d;
+    float dz = signed_distance_sphere(p+Vec3f{0, 0, eps}, CENTER, RADIUS) - d;
+    return Vec3f{dx, dy, dz}.normalize();
 }
 
 bool sphere_trace(const Vec3f& orig, const Vec3f& dir, Vec3f& hit) {
-    Vec3f pos = orig;
+    hit = orig;
     for (int i = 0; i < 128; ++i) {
-        float d = signed_distance_sphere(pos, Vec3f{0, 0, 0}, 1.5);
+        float d = signed_distance_sphere(hit, CENTER, RADIUS);
         if (d < 0) return true;
-        pos = pos + dir * std::max(0.01f, sqrt(d)*0.1f);
+        hit = hit + dir * std::max(0.01f, d*0.1f);
     }
     return false;
 }
@@ -35,6 +48,7 @@ int main() {
     const int height = 480;
     const float fov = M_PI/3.0f;//fovy
 
+    Vec3f light{10, 10, 10};//light
     std::vector<Vec3f> framebuffer(width*height);
 
 #pragma omp parallel for
@@ -47,12 +61,16 @@ int main() {
             //is located at z=0. In this course, the z of the projection plane has to be calculated
             //using fov and screen height.
             float x = (i) - width/2.0f;
-            float y = (j) - height/2.0f;
+            float y = -((j) - height/2.0f);
             float z = -height / (2.0f * tanf(fov/2.0f));
             
             Vec3f hit;
             if (sphere_trace(Vec3f{0, 0, 3}, Vec3f{x, y, z}.normalize(), hit)) {
-                framebuffer[i+j*width] = Vec3f{1,1,1};
+                auto n = distance_field_normal(hit);
+                auto l = (light - hit).normalize();
+                Vec3f diffuse = Vec3f{1,1,1} * std::max(n*l, 0.4f) * 1.0;
+                Vec3f color = diffuse;
+                framebuffer[i+j*width] = color;
             } else {
                 framebuffer[i+j*width] = Vec3f{0.2, 0.7, 0.8};
             }
