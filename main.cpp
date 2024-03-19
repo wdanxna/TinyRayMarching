@@ -16,7 +16,17 @@ void write_ppm(const char* filename, const std::vector<Vec3f>& data, int width, 
     }
 }
 
+float signed_distance_sphere(const Vec3f& p, const Vec3f& center, float radius) {
+    return powf(p.x - center.x, 2.0f) + powf(p.y - center.y, 2.0f) + powf(p.z - center.z, 2.0f) - radius*radius;
+}
+
 bool sphere_trace(const Vec3f& orig, const Vec3f& dir, Vec3f& hit) {
+    Vec3f pos = orig;
+    for (int i = 0; i < 128; ++i) {
+        float d = signed_distance_sphere(pos, Vec3f{0, 0, 0}, 1.5);
+        if (d < 0) return true;
+        pos = pos + dir * std::max(0.01f, sqrt(d)*0.1f);
+    }
     return false;
 }
 
