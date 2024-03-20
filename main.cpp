@@ -20,7 +20,8 @@ void write_ppm(const char* filename, const std::vector<Vec3f>& data, int width, 
 }
 
 float signed_distance_sphere(const Vec3f& p, const Vec3f& center, float radius) {
-    return (p-center).norm() - radius;
+    Vec3f s = Vec3f(p-center).normalize(radius);// the "hit" point
+    return (p-center).norm() - (radius + (sin(16*s.x)*sin(16*s.y)*sin(16*s.z)*0.2f));
 }
 
 Vec3f distance_field_normal(const Vec3f& p) {
@@ -68,9 +69,8 @@ int main() {
             if (sphere_trace(Vec3f{0, 0, 3}, Vec3f{x, y, z}.normalize(), hit)) {
                 auto n = distance_field_normal(hit);
                 auto l = (light - hit).normalize();
-                Vec3f diffuse = Vec3f{1,1,1} * std::max(n*l, 0.4f) * 1.0;
-                Vec3f color = diffuse;
-                framebuffer[i+j*width] = color;
+                float intensity = std::max(n*l, 0.4f) * 1.0;
+                framebuffer[i+j*width] = Vec3f{1,1,1} * intensity;
             } else {
                 framebuffer[i+j*width] = Vec3f{0.2, 0.7, 0.8};
             }
