@@ -8,6 +8,7 @@
                 "-fcolor-diagnostics",
                 "-fansi-escape-codes",
                 "-omp",
+                "-O3",
                 "-g",
                 "${file}",
                 "-o",

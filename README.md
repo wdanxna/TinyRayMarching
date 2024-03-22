@@ -1,2 +1,6 @@
 # TinyRayMarching
-my raymarching practice
+My raymarching practice
+
+![boom](./out.png)
+
+ray marching + SDF + perlin noise
